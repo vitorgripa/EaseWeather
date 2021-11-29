@@ -1,18 +1,11 @@
 from typing import List, Tuple
-import aiohttp
+from aiohttp import ClientSession
 
 from datetime import datetime
 
 from aiohttp.client import request
 
 NASA_POWER_API_URL = "https://power.larc.nasa.gov/api"
-
-OUTPUT_FORMAT = (
-    "NetCDF",
-    "ASCII",
-    "JSON",
-    "CSV"
-)
 
 WEATHER_PARAMETERS = (
     "T2M",
@@ -35,10 +28,9 @@ async def request_nasa_power_data(latitude: float, longitude: float, dates: Tupl
 
     endpoint = create_endpoint(NASA_POWER_API_URL, request_params, temporal, spatial)
 
-    return endpoint
-
-    # async with aiohttp.ClientSession() as session:
-        
+    async with ClientSession() as session:
+        async with session.get(endpoint) as response:
+            return response.content
 
 def validate_date():
     pass
