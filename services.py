@@ -1,19 +1,16 @@
-from fastapi import HTTPException
-
 from typing import List, Tuple
-from aiohttp import ClientSession
 
 from datetime import datetime
 
+from aiohttp import ClientSession
+
 from aiohttp.client import request
 
-NASA_POWER_API_URL = "https://power.larc.nasa.gov/api"
+from fastapi import HTTPException
 
-WEATHER_PARAMETERS = (
-    "T2M",
-    "T2M_MAX",
-    "T2M_MIN"
-)
+from constants import WEATHER_PARAMETERS
+from constants import NASA_POWER_API_URL
+
 
 create_endpoint = lambda api_url, params, temporal, spatial : f"{api_url}/temporal/{temporal}/{spatial}?" + "&".join(f"{k}={v}" for k, v in params.items())
 
@@ -33,17 +30,11 @@ async def request_nasa_power_data(latitude: float, longitude: float, start: str,
     async with ClientSession() as session:
 
         async with session.get(endpoint) as response:
-            # print(response.status)
             match response.status:
                 case 200:
                     return await response.read()
                 case _:
-                    raise Exception(response.status)
-
-
-def validate_date():
-    pass
-
-
-def format_date():
-    pass
+                    raise HTTPException(
+                        status_code=500,
+                        detail = "Nasa power is unavailable"
+                    )
