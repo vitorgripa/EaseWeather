@@ -1,5 +1,9 @@
 import re
 import datetime
+import netCDF4
+import pandas
+
+from time import time
 
 from fastapi import FastAPI
 from fastapi import HTTPException
@@ -16,23 +20,25 @@ SPATIALS = (
 )
 
 OUTPUT_FORMAT = (
-    "NetCDF",
-    "ASCII",
-    "JSON",
-    "CSV"
+    "netcdf",
+    "csv",
+    "json",
+    "ascii",
+    "icasa",
+    "xarray"
 )
 
 API_TYPES = (
-    "Temporal",
-    "Application",
-    "System"
+    "temporal",
+    "application",
+    "system"
 )
 
-TEMPORALS_API = (
-    "Climatology",
-    "Monthly",
-    "Daily",
-    "Hourly"
+TEMPORALS = (
+    "climatology",
+    "monthly",
+    "daily",
+    "hourly"
 )
 
 COMMUNITIES = (
@@ -44,11 +50,18 @@ NASAPOWER_DATE_FORMAT = "%Y%m%d"
 REGEX_DATE_ISO8601 = "\d{4}separator\d{2}separator\d{2}"
 DEFAULT_REGEX_DATE = "\d{2}separator\d{2}separator\d{4}"
 
-INITIAL_DATE = "2020-01-01"
+INITIAL_DATE = "2015-01-01"
 FINAL_DATE = "01/01/2020"
 
 MIN_INITIAL_DATE = datetime.datetime(2000, 1, 1).date()
 MAX_FINAL_DATE = datetime.datetime(2020, 12, 1).date()
+
+DEFAULT_SPATIAL = SPATIALS[0]
+DEFAULT_OUTPUT_FORMAT = OUTPUT_FORMAT[0]
+DEFAULT_API_TYPE = API_TYPES[0]
+DEFAULT_TEMPORAL = TEMPORALS[2]
+DEFAULT_COMMUNITY = COMMUNITIES[0]
+
 
 async def validate_dates(initial_date: str, final_date: str):
     formated_initial_date = await format_date(initial_date)
@@ -91,7 +104,11 @@ async def validate_coordinates(latitude: float, longitude: float):
     if longitude < -180 or longitude > 180:
         errors.append("Longitude out of bounds")
 
-    return errors
+    if errors:
+        raise HTTPException(
+            status_code=406,
+            detail = " and ".join(errors)
+        )
 
 
 async def discover_date_template(date: str):
@@ -100,20 +117,14 @@ async def discover_date_template(date: str):
     elif "-" in date:
         separator = "-"
     else:
-        raise HTTPException(
-            status_code = 400,
-            detail="Date has no separator"
-        )
+        separator = ""
 
     if re.search(REGEX_DATE_ISO8601.replace("separator", separator), date):
         template = f"%Y{separator}%m{separator}%d"
     elif re.search(DEFAULT_REGEX_DATE.replace("separator", separator), date):
         template = f"%d{separator}%m{separator}%Y"
     else:
-        raise HTTPException(
-            status_code = 400,
-            detail="Invalid date format"
-        )
+        template = f"%Y%m%d"
 
     return template
 
@@ -128,17 +139,39 @@ async def format_date(date: str):
 
     return formated_date
 
+async def format_nasa_power_output(output: bytes, start_date: str, end_date: str):
+    dataset = netCDF4.Dataset(b'', memory=output)
+
+    dates = (
+        datetime.date() for datetime in pandas.date_range(start_date, end_date)
+    )
+
+    zipped_variables = zip(dates, dataset.variables["T2M"], dataset.variables["T2M_MAX"], dataset.variables["T2M_MIN"])
+
+    yield "date,temp,temp max,temp min\n"
+
+    for date, ((t2m, ), ), ((t2m_max,),), ((t2m_min,), ) in zipped_variables:
+        yield f"{date},{t2m},{t2m_max},{t2m_min}\n"
+
 
 @app.get("/")
-async def index(latitude: float, longitude: float):
-    errors = await validate_coordinates(latitude, longitude)
-
-    if errors:
-        raise HTTPException(
-            status_code=406,
-            detail = " and ".join(errors)
-        )
+async def index(latitude: float, longitude: float, output: str = DEFAULT_OUTPUT_FORMAT):
+    await validate_coordinates(latitude, longitude)
 
     nasapower_start_date, nasapower_end_date = await validate_dates(INITIAL_DATE, FINAL_DATE)
 
-    return f"{nasapower_start_date} {nasapower_end_date}"
+    response = await request_nasa_power_data(
+        latitude,
+        longitude,
+        nasapower_start_date,
+        nasapower_end_date,
+        output,
+        DEFAULT_SPATIAL,
+        DEFAULT_API_TYPE,
+        DEFAULT_TEMPORAL,
+        DEFAULT_COMMUNITY
+    )
+
+    output = format_nasa_power_output(response, nasapower_start_date, nasapower_end_date)
+
+    return StreamingResponse(output)

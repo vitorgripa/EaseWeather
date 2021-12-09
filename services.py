@@ -1,3 +1,5 @@
+from fastapi import HTTPException
+
 from typing import List, Tuple
 from aiohttp import ClientSession
 
@@ -15,22 +17,29 @@ WEATHER_PARAMETERS = (
 
 create_endpoint = lambda api_url, params, temporal, spatial : f"{api_url}/temporal/{temporal}/{spatial}?" + "&".join(f"{k}={v}" for k, v in params.items())
 
-async def request_nasa_power_data(latitude: float, longitude: float, dates: Tuple[str, str], format: str, spatial: str, type: str, temporal: str, community: str):
+async def request_nasa_power_data(latitude: float, longitude: float, start: str, end: str, output_format: str, spatial: str, api_type: str, temporal: str, community: str):
     request_params = {
         "latitude": latitude,
         "longitude": longitude,
         "parameters": ",".join(WEATHER_PARAMETERS),
-        "start": dates[0],
-        "end": dates[1],
-        "format": format,
+        "start": start,
+        "end": end,
+        "format": output_format,
         "community": community
     }
 
     endpoint = create_endpoint(NASA_POWER_API_URL, request_params, temporal, spatial)
 
     async with ClientSession() as session:
+
         async with session.get(endpoint) as response:
-            return response.content
+            # print(response.status)
+            match response.status:
+                case 200:
+                    return await response.read()
+                case _:
+                    raise Exception(response.status)
+
 
 def validate_date():
     pass
