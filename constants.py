@@ -37,10 +37,10 @@ NASAPOWER_DATE_FORMAT = "%Y%m%d"
 REGEX_DATE_ISO8601 = "\d{4}separator\d{2}separator\d{2}"
 DEFAULT_REGEX_DATE = "\d{2}separator\d{2}separator\d{4}"
 
-INITIAL_DATE = "2015-01-01"
-FINAL_DATE = "01/01/2021"
+INITIAL_DATE = "1981-01-01"
+FINAL_DATE = "01/11/2021"
 
-MIN_INITIAL_DATE = datetime(2000, 1, 1).date()
+MIN_INITIAL_DATE = datetime(1981, 1, 1).date()
 MAX_FINAL_DATE = datetime(2021, 11, 1).date()
 
 DEFAULT_SPATIAL = SPATIALS[0]
