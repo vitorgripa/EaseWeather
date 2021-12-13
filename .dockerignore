@@ -1,0 +1,12 @@
+README.md
+
+*.pyc
+
+.devcontainer
+.vscode
+.git
+.gitignore
+
+
+data/
+scripts/
