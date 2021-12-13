@@ -11,4 +11,4 @@ RUN pip3 install --no-cache-dir --upgrade -r /tmp/pip-tmp/requirements.txt \
 
 COPY ./* /app/
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
+CMD uvicorn main:app --host 0.0.0.0 --port $PORT
