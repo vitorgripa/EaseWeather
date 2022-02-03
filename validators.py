@@ -1,9 +1,6 @@
-from datetime import datetime
-
 from fastapi.exceptions import HTTPException
 
 from formatters import format_date
-from formatters import format_nasa_power_output
 
 from constants import MAX_FINAL_DATE
 from constants import MIN_INITIAL_DATE
