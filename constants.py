@@ -34,8 +34,8 @@ COMMUNITIES = (
 
 NASAPOWER_DATE_FORMAT = "%Y%m%d"
 
-REGEX_DATE_ISO8601 = "\d{4}separator\d{2}separator\d{2}"
-DEFAULT_REGEX_DATE = "\d{2}separator\d{2}separator\d{4}"
+REGEX_DATE_ISO8601 = r"\d{4}separator\d{2}separator\d{2}"
+DEFAULT_REGEX_DATE = r"\d{2}separator\d{2}separator\d{4}"
 
 INITIAL_DATE = "1981-01-01"
 FINAL_DATE = "01/11/2021"
