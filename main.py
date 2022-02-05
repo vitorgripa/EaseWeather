@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 
+from fastapi.middleware.cors import CORSMiddleware
+
 from fastapi.responses import StreamingResponse
 
 from constants import DEFAULT_OUTPUT_FORMAT
@@ -9,6 +11,7 @@ from constants import DEFAULT_SPATIAL
 from constants import DEFAULT_API_TYPE
 from constants import DEFAULT_TEMPORAL
 from constants import DEFAULT_COMMUNITY
+from constants import ORIGINS
 
 from validators import validate_coordinates
 from validators import validate_dates
@@ -19,6 +22,14 @@ from formatters import format_nasa_power_output
 
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ORIGINS,
+    allow_credentials=True,
+    allow_methods=("GET", ),
+    allow_headers=("*", )
+)
 
 
 @app.get("/")
